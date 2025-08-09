@@ -24,31 +24,42 @@ def get_db():
 def init_db():
     conn = get_db()
     cur = conn.cursor()
+    
     # Create tables if not exist
-    cur.execute(\"\"\"CREATE TABLE IF NOT EXISTS users (
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         display_name TEXT,
         avatar_url TEXT,
         password_hash TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )\"\"\")
-    cur.execute(\"\"\"CREATE TABLE IF NOT EXISTS conversations (
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user1 INTEGER NOT NULL,
         user2 INTEGER NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user1, user2)
-    )\"\"\")
-    cur.execute(\"\"\"CREATE TABLE IF NOT EXISTS messages (
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         conversation_id INTEGER NOT NULL,
         sender_id INTEGER NOT NULL,
         text TEXT,
         timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
         is_read INTEGER DEFAULT 0
-    )\"\"\")
+    )
+    """)
+
     conn.commit()
+
     # Migration: ensure is_read column exists (for older DBs)
     try:
         cur.execute("SELECT is_read FROM messages LIMIT 1")
