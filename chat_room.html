@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}Chat{% endblock %}
+{% block content %}
+<div class="sidebar">
+  <a href="{{ url_for('chat_list') }}">⬅ Back</a>
+  <h4>Conversation</h4>
+  <!-- show other user info lightly -->
+  <!-- For simplicity, offer link back to chat list -->
+</div>
+<div class="main">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="avatar" id="other-avatar">??</div>
+    <div><strong id="other-name">Chat</strong><div class="small" id="other-username"></div></div>
+  </div>
+  <div class="messages" id="messages">
+    {% for m in messages %}
+      <div class="{% if m.sender_id==me_id %}msg-bubble msg-me{% else %}msg-bubble msg-other{% endif %}" data-id="{{ m.id }}" data-read="{{ m.is_read }}">
+        <div style="font-size:13px"><strong>{{ m.sender_display }}</strong> <span class="small">• <span class="ts" data-ts="{{ m.timestamp }}">{{ m.timestamp }}</span></span></div>
+        <div style="margin-top:6px">{{ m.text }}</div>
+        <div class="small" style="text-align:right; margin-top:6px;">{% if m.sender_id==me_id %}{% if m.is_read %}Seen{% else %}Sent{% endif %}{% endif %}</div>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="small" id="typing-indicator" style="height:18px;"></div>
+  <div class="compose">
+    <input id="message_input" autocomplete="off" placeholder="Message...">
+    <button id="send_btn">Send</button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  const conv_id = "{{ conv_id }}";
+  const me_id = {{ me_id }};
+  // register on connect
+  socket.on('connect', ()=>{
+    socket.emit('register_socket', {'user_id': parseInt(me_id)});
+    socket.emit('join_room', {'room': String(conv_id)});
+  });
+
+  // populate other user info from server by fetching conversation data (quick approach)
+  fetch(window.location.pathname + '?_meta=1').then(r=>r.json()).then(data=>{
+    if(data.other){
+      document.getElementById('other-name').textContent = data.other.display_name || data.other.username;
+      document.getElementById('other-username').textContent = data.other.username;
+      const av = data.other.avatar_url || '';
+      const ael = document.getElementById('other-avatar');
+      if(av) ael.innerHTML = `<img src="${av}" style="width:42px;height:42px;border-radius:50%">`;
+      else ael.textContent = (data.other.display_name || data.other.username).substring(0,2).toUpperCase();
+    }
+  }).catch(()=>{});
+
+  socket.on('new_message', function(data){
+    if(String(data.conv_id) !== String(conv_id)) return;
+    const mdiv = document.getElementById('messages');
+    const el = document.createElement('div');
+    el.className = (data.sender_id==me_id) ? 'msg-bubble msg-me' : 'msg-bubble msg-other';
+    el.setAttribute('data-id', data.id);
+    el.innerHTML = `<div style="font-size:13px"><strong>${data.sender_display}</strong> <span class="small">• <span class="ts" data-ts="${data.timestamp}">${data.timestamp}</span></span></div>
+                    <div style="margin-top:6px">${data.text}</div>
+                    <div class="small" style="text-align:right; margin-top:6px;">${data.sender_id==me_id ? 'Sent' : ''}</div>`;
+    mdiv.appendChild(el);
+    mdiv.scrollTop = mdiv.scrollHeight;
+    // acknowledge read if message is from other user (we're viewing)
+    if(data.sender_id!=me_id){
+      socket.emit('message_read', {'conv_id': conv_id, 'user_id': me_id});
+    }
+    formatTimestamps();
+  });
+
+  // typing indicator
+  let typingTimer = null;
+  const input = document.getElementById('message_input');
+  input.addEventListener('input', ()=>{
+    socket.emit('typing', {'conv_id': conv_id, 'user_id': me_id});
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(()=> socket.emit('stop_typing', {'conv_id': conv_id, 'user_id': me_id}), 1200);
+  });
+  socket.on('typing', function(data){
+    if(String(data.conv_id) !== String(conv_id)) return;
+    if(data.user_id==me_id) return;
+    document.getElementById('typing-indicator').textContent = 'Typing...';
+  });
+  socket.on('stop_typing', function(data){
+    if(String(data.conv_id) !== String(conv_id)) return;
+    document.getElementById('typing-indicator').textContent = '';
+  });
+
+  socket.on('messages_read', function(data){
+    if(String(data.conv_id) !== String(conv_id)) return;
+    // mark outgoing message bubbles as Seen
+    document.querySelectorAll('.msg-me').forEach(el=>{
+      const small = el.querySelector('.small:last-of-type');
+      if(small) small.textContent = 'Seen';
+    });
+  });
+
+  document.getElementById('send_btn').onclick = function(){
+    const text = document.getElementById('message_input').value.trim();
+    if(!text) return;
+    socket.emit('send_message', {'conv_id': parseInt(conv_id), 'sender_id': parseInt(me_id), 'text': text});
+    document.getElementById('message_input').value = '';
+  };
+
+  // format timestamps client-side
+  function formatTimestamps(){
+    document.querySelectorAll('.ts').forEach(el=>{
+      try{
+        const iso = el.getAttribute('data-ts');
+        const d = new Date(iso);
+        el.textContent = d.toLocaleString();
+      }catch(e){}
+    });
+  }
+  formatTimestamps();
+
+  // when opening the room, notify server to mark messages read
+  window.addEventListener('load', ()=>{
+    socket.emit('message_read', {'conv_id': conv_id, 'user_id': me_id});
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="sidebar">
+  <h3>Login</h3>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<ul>{% for cat, msg in messages %}<li><strong>{{cat}}:</strong> {{msg}}</li>{% endfor %}</ul>{% endif %}
+  {% endwith %}
+  <form method="post">
+    <div><label>Username<br><input name="username" required></label></div>
+    <div><label>Password<br><input name="password" type="password" required></label></div>
+    <div style="margin-top:8px"><button type="submit">Login</button></div>
+  </form>
+  <p>Or <a href="{{ url_for('register') }}">Register</a></p>
+</div>
+<div class="main">
+  <h2>Welcome to Insta Chat</h2>
+  <p class="small">A simple demo of messaging (works with Render)</p>
+</div>
+{% endblock %}

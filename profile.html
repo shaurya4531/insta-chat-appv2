@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="sidebar">
+  <h3>Profile</h3>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<ul>{% for cat, msg in messages %}<li><strong>{{cat}}:</strong> {{msg}}</li>{% endfor %}</ul>{% endif %}
+  {% endwith %}
+  <form method="post">
+    <div><label>Display name<br><input name="display_name" value="{{ display_name }}"></label></div>
+    <div><label>Avatar URL<br><input name="avatar_url" value="{{ avatar_url }}" placeholder="https://..."></label></div>
+    <div style="margin-top:8px"><button type="submit">Save</button></div>
+  </form>
+</div>
+<div class="main">
+  <h2>Profile</h2>
+  <p class="small">Username: <strong>{{ username }}</strong></p>
+</div>
+{% endblock %}

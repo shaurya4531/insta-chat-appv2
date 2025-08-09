@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Chats{% endblock %}
+{% block content %}
+<div class="sidebar">
+  <h3>Conversations</h3>
+  {% if convs %}
+    {% for c in convs %}
+      <div class="user-row" onclick="location.href='{{ url_for('chat_room', conv_id=c.id) }}'">
+        <div class="avatar">{% if c.other_avatar %}<img src="{{ c.other_avatar }}" style="width:42px;height:42px;border-radius:50%;">{% else %}{{ c.other_display[:2]|upper }}{% endif %}</div>
+        <div>
+          <div><strong>{{ c.other_display or c.other_username }}</strong></div>
+          <div class="small">{{ c.other_username }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="small">No conversations yet</div>
+  {% endif %}
+  <hr>
+  <h4>Start new chat</h4>
+  {% for u in others %}
+    <div class="user-row">
+      <div class="avatar">{% if u.avatar_url %}<img src="{{ u.avatar_url }}" style="width:42px;height:42px;border-radius:50%;">{% else %}{{ (u.display_name or u.username)[:2]|upper }}{% endif %}</div>
+      <div style="flex:1">
+        <div><strong>{{ u.display_name or u.username }}</strong></div>
+        <div class="small">{{ u.username }}</div>
+      </div>
+      <div><a href="{{ url_for('new_chat', user_id=u.id) }}">Chat</a></div>
+    </div>
+  {% else %}
+    <div class="small">No other users</div>
+  {% endfor %}
+</div>
+<div class="main" id="main-area">
+  <h3>Messages</h3>
+  <p class="small">Select a conversation to start messaging.</p>
+</div>
+{% endblock %}

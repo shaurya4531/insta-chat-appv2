@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="sidebar">
+  <h3>Register</h3>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<ul>{% for cat, msg in messages %}<li><strong>{{cat}}:</strong> {{msg}}</li>{% endfor %}</ul>{% endif %}
+  {% endwith %}
+  <form method="post">
+    <div><label>Display name (optional)<br><input name="display_name"></label></div>
+    <div><label>Avatar URL (optional)<br><input name="avatar_url" placeholder="https://..."></label></div>
+    <div><label>Password (min 3 chars)<br><input name="password" type="password" required></label></div>
+    <div style="margin-top:8px"><button type="submit">Register</button></div>
+  </form>
+  <p>Already have account? <a href="{{ url_for('login') }}">Login</a></p>
+</div>
+<div class="main">
+  <h2>Create your account</h2>
+  <p class="small">We'll assign a username like <em>user_1234</em> automatically.</p>
+</div>
+{% endblock %}
